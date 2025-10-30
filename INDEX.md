@@ -4,23 +4,41 @@
 
 | File | Purpose | Read Time |
 |------|---------|-----------|
+| **[START_HERE.md](START_HERE.md)** | Choose your path to get started | 2 min |
 | **[QUICK_START.md](QUICK_START.md)** | Get running in 5 minutes | 2 min |
 | **[README.md](README.md)** | Project overview and structure | 5 min |
 | **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** | What was implemented and why | 10 min |
 | **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** | Detailed usage guide with examples | 20 min |
+| **[LITERATURE_REVIEW.md](LITERATURE_REVIEW.md)** | Related approaches (DDM, Bayesian, HGF) | 15 min |
+| **[HGF_IMPLEMENTATION_GUIDE.md](HGF_IMPLEMENTATION_GUIDE.md)** | Hierarchical Gaussian Filter guide | 20 min |
+| **[HGF_SUMMARY.md](HGF_SUMMARY.md)** | Quick HGF overview and usage | 5 min |
 | **[proposal.md](proposal.md)** | Original research proposal | 10 min |
 
 ## 🚀 Executable Scripts
 
+### Full Pipeline
 | File | Command | Purpose |
 |------|---------|---------|
 | **test_implementation.py** | `python3 test_implementation.py` | Quick test (2 min) |
 | **main_pipeline.py** | `python3 main_pipeline.py` | Full analysis (10 min) |
 
+### Individual Steps (Recommended for Debugging)
+| File | Command | Purpose |
+|------|---------|---------|
+| **step1_generate_data.py** | `python3 step1_generate_data.py` | Generate experimental data |
+| **step2_estimate_uncertainty.py** | `python3 step2_estimate_uncertainty.py` | Add Bayesian uncertainty estimates |
+| **step3_fit_traditional_evc.py** | `python3 step3_fit_traditional_evc.py` | Fit baseline EVC model |
+| **step4_fit_bayesian_evc.py** | `python3 step4_fit_bayesian_evc.py` | Fit Bayesian EVC model |
+| **step5_compare_models.py** | `python3 step5_compare_models.py` | Compare model performance |
+| **step6_visualize.py** | `python3 step6_visualize.py` | Create all visualizations |
+
+**See [RUN_STEPS.md](RUN_STEPS.md) or [STEP_BY_STEP.txt](STEP_BY_STEP.txt) for detailed instructions.**
+
 ## 💻 Source Code
 
 ### Models (`models/`)
 - **bayesian_uncertainty.py** - Bayesian uncertainty estimation (decision + state)
+- **hgf_uncertainty.py** - Hierarchical Gaussian Filter (adaptive learning, volatility tracking)
 - **traditional_evc.py** - Baseline EVC model (reward - effort)
 - **bayesian_evc.py** - Bayesian EVC model (reward - effort + uncertainty reduction)
 

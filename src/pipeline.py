@@ -249,7 +249,7 @@ class EVCPipeline:
 # ---------------------------------------------------------------------------
 
 
-def main(data_path: str = "data/dummy_evc_trials.csv") -> None:
+def main(data_path: str = "data/structured_evc_trials.csv") -> None:
     """Convenience entry point for running the pipeline from the CLI."""
 
     pipeline = EVCPipeline(data_path=data_path)
