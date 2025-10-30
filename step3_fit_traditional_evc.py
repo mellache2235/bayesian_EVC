@@ -181,6 +181,7 @@ def main():
     print("TRAINING RESULTS")
     print("-" * 70)
     print(f"Fitted parameters:")
+    print(f"  - Baseline: {train_results['baseline']:.4f}")
     print(f"  - Reward weight: {train_results['reward_weight']:.4f}")
     print(f"    Interpretation: Fitted value of β_r (reward sensitivity)")
     print(f"  - Effort cost weight: {train_results['effort_cost_weight']:.4f}")
