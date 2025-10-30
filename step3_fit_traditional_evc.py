@@ -64,6 +64,7 @@ def main():
     print("TRAINING RESULTS")
     print("-" * 70)
     print(f"Fitted parameters:")
+    print(f"  - Baseline: {train_results['baseline']:.4f}")
     print(f"  - Reward weight: {train_results['reward_weight']:.4f}")
     print(f"  - Effort cost weight: {train_results['effort_cost_weight']:.4f}")
     print(f"  - Effort exponent: {train_results['effort_exponent']:.4f}")

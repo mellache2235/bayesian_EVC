@@ -79,10 +79,15 @@ class ExperimentalDataGenerator:
                 # Reward magnitude (varies by trial)
                 reward_magnitude = np.random.choice([1, 2, 5, 10])
                 
-                # Control allocation (influenced by uncertainty and individual differences)
-                # Higher uncertainty -> more control if uncertainty tolerant
-                control_signal = baseline_control + \
-                                uncertainty_tolerance * total_uncertainty * 0.5 + \
+                # Control allocation (influenced by reward, accuracy, AND uncertainty)
+                # Traditional EVC component: reward * accuracy
+                reward_benefit = (reward_magnitude / 10.0) * evidence_clarity * 0.3
+                
+                # Uncertainty component (Bayesian innovation)
+                uncertainty_benefit = uncertainty_tolerance * total_uncertainty * 0.3
+                
+                # Combined control signal
+                control_signal = baseline_control + reward_benefit + uncertainty_benefit + \
                                 np.random.normal(0, 0.1)
                 control_signal = np.clip(control_signal, 0, 1)
                 
