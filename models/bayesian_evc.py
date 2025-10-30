@@ -2,8 +2,30 @@
 Bayesian Expected Value of Control (EVC) Model
 
 This module extends the traditional EVC model by incorporating uncertainty components.
-Unlike traditional EVC, this model assumes people value reducing uncertainty, not just
-maximizing reward. This is the KEY INNOVATION for your PhD project.
+This is the KEY INNOVATION for your PhD project.
+
+⚠️ KEY DIFFERENCE FROM TRADITIONAL EVC:
+---------------------------------------
+Traditional EVC ASSUMES:
+- People have perfect knowledge (no uncertainty)
+- Decisions based ONLY on: Reward - Effort
+- Formula: EVC = β_r × E[Reward|c] - c_e × c^α
+- Uncertainty reduction is NOT valued
+
+Bayesian EVC (THIS MODEL) EXTENDS by:
+- Including uncertainty about task rules (state uncertainty)
+- Including uncertainty about evidence (decision uncertainty)
+- Adding uncertainty reduction AS A BENEFIT
+- Formula: EVC = β_r × E[Reward|c] - c_e × c^α + λ × Uncertainty_Reduction(c)
+- The +λ term is the KEY ADDITION
+
+🎯 THE INNOVATION:
+------------------
+Unlike traditional EVC, this model assumes people VALUE reducing uncertainty,
+not just maximizing reward. Uncertainty reduction provides intrinsic benefit.
+
+This is the CORE HYPOTHESIS you're testing in your PhD:
+"Do people invest cognitive control to reduce uncertainty, beyond just getting rewards?"
 
 THEORETICAL FOUNDATION:
 -----------------------
@@ -72,7 +94,31 @@ class BayesianEVC:
     """
     Bayesian EVC model: EVC = β_r × E[Reward|c] - c_e × c^α + λ × Uncertainty_Reduction(c)
     
+    ⚠️ THIS IS THE KEY MODEL FOR YOUR PHD PROJECT
+    
     This model extends traditional EVC by adding uncertainty reduction as a benefit.
+    
+    📊 SIDE-BY-SIDE COMPARISON:
+    ---------------------------
+    
+    Traditional EVC:
+        EVC = β_r × E[Reward|c] × c - c_e × c^α
+        Components: (1) Reward benefit, (2) Effort cost
+        Assumption: People only care about reward and effort
+    
+    Bayesian EVC (THIS MODEL):
+        EVC = β_r × E[Reward|c] × c - c_e × c^α + λ × η × c × U_total × (1 - τ)
+        Components: (1) Reward benefit, (2) Effort cost, (3) Uncertainty reduction benefit
+        Assumption: People ALSO value reducing uncertainty
+    
+    🔑 THE KEY PARAMETER: uncertainty_weight (λ)
+    ---------------------------------------------
+    This parameter answers: "How much does uncertainty reduction matter?"
+    - If λ = 0 → Traditional EVC (uncertainty doesn't matter)
+    - If λ > 0 → Uncertainty reduction IS valued (supports your hypothesis)
+    - Higher λ → People strongly value reducing uncertainty
+    
+    This is what you're trying to ESTIMATE and TEST in your PhD project!
     
     Parameters:
     -----------

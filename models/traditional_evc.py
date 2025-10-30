@@ -1,9 +1,25 @@
 """
 Traditional Expected Value of Control (EVC) Model
 
-This module implements the classic EVC model from Shenhav et al. (2013) without 
-uncertainty components. The model assumes people allocate cognitive control 
+This module implements the classic EVC model from Shenhav et al. (2013) WITHOUT 
+uncertainty components. This is the BASELINE MODEL for comparison.
+
+⚠️ KEY DIFFERENCE FROM BAYESIAN EVC:
+------------------------------------
+Traditional EVC ASSUMES:
+- People have PERFECT KNOWLEDGE of task rules (no state uncertainty)
+- People know EXACTLY what the evidence means (no decision uncertainty)
+- Decisions based ONLY on reward-effort tradeoff
+- Uncertainty reduction is NOT valued (no benefit from reducing uncertainty)
+
+Bayesian EVC EXTENDS this by:
+- Including uncertainty about task rules and evidence
+- Adding uncertainty reduction AS A BENEFIT
+- Recognizing that people VALUE reducing uncertainty
+
+The model assumes people allocate cognitive control 
 based on a simple cost-benefit analysis: maximize expected reward while minimizing effort.
+NOTE: This does NOT consider uncertainty as a factor influencing control decisions.
 
 THEORETICAL FOUNDATION:
 -----------------------
@@ -61,10 +77,26 @@ class TraditionalEVC:
     """
     Traditional EVC model: EVC = β_r × E[Reward|c] - c_e × c^α
     
+    ⚠️ BASELINE MODEL - NO UNCERTAINTY COMPONENTS
+    
     This is the baseline model WITHOUT uncertainty components. It assumes:
-    - Perfect knowledge of task rules
-    - No uncertainty about evidence quality
+    - Perfect knowledge of task rules (no state uncertainty)
+    - No uncertainty about evidence quality (no decision uncertainty)
     - Decisions based purely on reward-effort tradeoff
+    - Uncertainty reduction provides NO BENEFIT (not valued)
+    
+    📊 COMPARISON WITH BAYESIAN EVC:
+    ---------------------------------
+    Traditional EVC Formula:
+        EVC = reward_benefit - effort_cost
+        (Only 2 components: reward and effort)
+    
+    Bayesian EVC Formula:
+        EVC = reward_benefit - effort_cost + uncertainty_reduction_benefit
+        (3 components: reward, effort, AND uncertainty reduction)
+    
+    The KEY DIFFERENCE: Bayesian EVC adds uncertainty_reduction_benefit
+    This means people invest control to REDUCE UNCERTAINTY, not just get rewards.
     
     Parameters:
     -----------
