@@ -29,19 +29,31 @@ WHY THIS STEP MATTERS:
 KEY CONCEPTS:
 ------------
 1. Decision Uncertainty: How uncertain you are about what the evidence means
-   - Based on evidence_clarity (inverse relationship)
+   - Currently: COMPUTED from evidence_clarity (1 - evidence_clarity)
+   - Evidence_clarity: Currently SET in simulation, but would be INFERRED in real experiments
+     → From RT, accuracy, confidence ratings, or DDM parameters
    - Higher evidence clarity → lower decision uncertainty
    - Measured using entropy: H = -Σ P(x) × log₂(P(x))
 
 2. State Uncertainty: How uncertain you are about which task rule is active
-   - Based on Bayesian belief updating over trials
+   - **INFERRED** from behavioral data (accuracy outcomes) using Bayesian updating
    - Uses Bayes' rule: P(rule|observation) ∝ P(observation|rule) × P(rule)
    - Tracks beliefs about multiple possible task states
+   - This is TRUE INFERENCE from observations
    - Measured using entropy of belief distribution
 
 3. Combined Uncertainty: Integrated measure of both types
    - Typically: combined = 0.5 × decision + 0.5 × state
    - Provides overall uncertainty level for EVC calculations
+
+⚠️ PARAMETER SOURCES:
+---------------------
+- evidence_clarity: SET (simulation) → Would be INFERRED in real experiments
+- decision_uncertainty: COMPUTED from evidence_clarity
+- state_uncertainty: INFERRED from observations (Bayesian updating)
+- confidence: COMPUTED from uncertainty
+- entropy: COMPUTED from probabilities
+- uncertainty_weight (λ): INFERRED from model fitting (Step 4)
 
 OUTPUT FILES:
 ------------

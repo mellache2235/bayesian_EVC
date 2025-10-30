@@ -74,15 +74,32 @@ class BayesianUncertaintyEstimator:
         """
         Estimate decision uncertainty based on evidence clarity.
         
-        Inspired by drift-diffusion models where uncertainty relates to
-        the difficulty of accumulating evidence.
+        ⚠️ IMPORTANT: SOURCE OF EVIDENCE_CLARITY
+        -----------------------------------------
+        Currently, evidence_clarity is PROVIDED as input (not inferred here).
+        
+        In REAL EXPERIMENTS, evidence_clarity would be INFERRED from:
+        1. Reaction times (faster = clearer evidence)
+        2. Accuracy (higher accuracy = clearer evidence)
+        3. Confidence ratings (direct measure)
+        4. Drift-diffusion model (DDM) parameters (drift rate)
+        
+        This function COMPUTES uncertainty FROM the provided evidence_clarity.
+        It does NOT infer evidence_clarity from behavioral data.
+        
+        To INFER evidence_clarity from data, you could:
+        - Use DDM to estimate drift rate from RT/accuracy
+        - Use confidence ratings directly
+        - Estimate from RT variability (less variable = clearer)
         
         Args:
             evidence_clarity: Clarity of evidence (0-1, higher = clearer)
+                            ⚠️ This is INPUT (assumed to be provided or inferred elsewhere)
             drift_rate: Optional drift rate from DDM-like process
+                       If provided, could be used to improve uncertainty estimation
             
         Returns:
-            Dictionary with uncertainty measures
+            Dictionary with uncertainty measures (COMPUTED, not inferred)
         """
         # DECISION UNCERTAINTY CALCULATION
         # Decision uncertainty is the inverse of evidence clarity
@@ -150,13 +167,30 @@ class BayesianUncertaintyEstimator:
         """
         Update beliefs about task state using Bayesian inference.
         
+        ⚠️ IMPORTANT: THIS IS INFERENCE (NOT SET A PRIORI)
+        ---------------------------------------------------
+        This method INFERS state uncertainty from OBSERVED DATA.
+        
+        Input: observation (0=incorrect, 1=correct) ← FROM DATA
+        Process: Bayesian inference (Bayes' rule)
+        Output: Updated beliefs about task states ← INFERRED
+        
+        This is different from decision_uncertainty which is COMPUTED from
+        evidence_clarity (which itself may be set or inferred).
+        
+        State uncertainty IS INFERRED because:
+        - It depends on ACCUMULATED observations over trials
+        - Uses Bayes' rule to update beliefs from outcomes
+        - Cannot be set a priori (it evolves with experience)
+        
         Args:
             observation: Observed outcome (0 or 1 for correct/incorrect)
+                        ← THIS COMES FROM BEHAVIORAL DATA (accuracy)
             likelihood_matrix: P(observation|state), shape (n_states,)
-                             If None, uses default likelihood
-            
+                             If None, uses default likelihood (SET a priori)
+                             
         Returns:
-            Updated state beliefs (posterior)
+            Updated state beliefs (posterior) ← INFERRED from observations
         """
         if likelihood_matrix is None:
             # Default: different states have different accuracy rates
