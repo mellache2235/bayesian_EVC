@@ -24,9 +24,6 @@ I've implemented a complete **Hierarchical Gaussian Filter (HGF)** for your Baye
 - `fit_hgf_parameters()` for parameter estimation
 - Complete demo showing it works!
 
-### 3. `LITERATURE_REVIEW.md` (Updated)
-Added section on HGF and related Bayesian approaches
-
 ---
 
 ## 🎯 Why Use HGF?
@@ -340,5 +337,5 @@ model.fit(data_with_hgf, uncertainty_col='hgf_combined_uncertainty')
 **Files to check:**
 - `HGF_IMPLEMENTATION_GUIDE.md` - Complete guide
 - `models/hgf_uncertainty.py` - Working code
-- `LITERATURE_REVIEW.md` - Related approaches
+- `BAYESIAN_INFERENCE_EXPLAINED.md` - Related approaches
 

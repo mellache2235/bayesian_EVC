@@ -53,27 +53,49 @@ class ExperimentalDataGenerator:
             for trial in range(n_trials_per_subject):
                 block = trial // (n_trials_per_subject // n_blocks)
                 
-                # Manipulate uncertainty levels across blocks
-                if block == 0:  # Low uncertainty block
-                    evidence_clarity = np.random.uniform(0.7, 0.9)
-                    rule_stability = 0.9
-                elif block == 1:  # High evidence uncertainty
-                    evidence_clarity = np.random.uniform(0.3, 0.5)
-                    rule_stability = 0.9
-                elif block == 2:  # High rule uncertainty
-                    evidence_clarity = np.random.uniform(0.7, 0.9)
-                    rule_stability = 0.4
-                else:  # High both uncertainties
-                    evidence_clarity = np.random.uniform(0.3, 0.5)
-                    rule_stability = 0.4
+                # ⚠️ IMPORTANT: PARAMETER SOURCES
+                # ----------------------------------
+                # In this SIMULATION, we SET these values a priori.
+                # In REAL EXPERIMENTS, these would be INFERRED from data:
+                #
+                # evidence_clarity: Currently SET here (simulation)
+                #   → In real experiment: INFERRED from reaction times, accuracy, confidence ratings
+                #   → Could use drift-diffusion model (DDM) to estimate from RT/accuracy
+                #
+                # rule_stability: Currently SET here (simulation)
+                #   → In real experiment: INFERRED from block transitions, accuracy patterns
+                #
+                # decision_uncertainty: Currently COMPUTED from evidence_clarity
+                #   → In real experiment: Could be INFERRED from confidence ratings or DDM
+                #
+                # state_uncertainty: Currently COMPUTED from rule_stability
+                #   → In real experiment: INFERRED using Bayesian updating (Step 2 does this)
                 
-                # Decision uncertainty (inverse of evidence clarity)
+                # Manipulate uncertainty levels across blocks (SET a priori in simulation)
+                if block == 0:  # Low uncertainty block
+                    evidence_clarity = np.random.uniform(0.7, 0.9)  # SET: High clarity
+                    rule_stability = 0.9  # SET: High stability
+                elif block == 1:  # High evidence uncertainty
+                    evidence_clarity = np.random.uniform(0.3, 0.5)  # SET: Low clarity
+                    rule_stability = 0.9  # SET: High stability
+                elif block == 2:  # High rule uncertainty
+                    evidence_clarity = np.random.uniform(0.7, 0.9)  # SET: High clarity
+                    rule_stability = 0.4  # SET: Low stability
+                else:  # High both uncertainties
+                    evidence_clarity = np.random.uniform(0.3, 0.5)  # SET: Low clarity
+                    rule_stability = 0.4  # SET: Low stability
+                
+                # Decision uncertainty (COMPUTED from evidence_clarity, not inferred)
+                # Formula: decision_uncertainty = 1 - evidence_clarity
+                # This is a simple transformation, not inference
                 decision_uncertainty = 1 - evidence_clarity
                 
-                # State uncertainty (inverse of rule stability)
+                # State uncertainty (COMPUTED from rule_stability, not inferred here)
+                # Note: Step 2 can INFER this using Bayesian updating from observations
+                # Formula: state_uncertainty = 1 - rule_stability
                 state_uncertainty = 1 - rule_stability
                 
-                # Combined uncertainty
+                # Combined uncertainty (COMPUTED: simple average)
                 total_uncertainty = (decision_uncertainty + state_uncertainty) / 2
                 
                 # Reward magnitude (varies by trial)
