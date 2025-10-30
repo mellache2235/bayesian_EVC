@@ -2,9 +2,11 @@
 
 ## Choose Your Path
 
-### Path A: Run Individual Steps (Recommended for Debugging) ⭐
+### Path A: Run Individual Steps (Recommended) ⭐
 
 **Best for:** Understanding each component, debugging, iterating
+
+**IMPORTANT: Run steps in numerical order (1 → 2 → 3 → 4 → 5 → 6)**
 
 ```bash
 python3 step1_generate_data.py
@@ -19,27 +21,7 @@ python3 step6_visualize.py
 
 ---
 
-### Path B: Run Full Pipeline
-
-**Best for:** Quick complete analysis
-
-```bash
-python3 main_pipeline.py
-```
-
-**Note:** Harder to debug if something goes wrong
-
----
-
-### Path C: Quick Test First
-
-**Best for:** Verifying installation
-
-```bash
-python3 test_implementation.py
-```
-
-**Then:** Choose Path A or B
+**Note:** There is no single "pipeline" script. Run each step individually in order.
 
 ---
 
@@ -80,9 +62,9 @@ Check these files:
 
 📖 **Quick reference:** `STEP_BY_STEP.txt` (1 page)  
 📖 **Detailed guide:** `RUN_STEPS.md` (comprehensive)  
-📖 **Full documentation:** `IMPLEMENTATION_GUIDE.md`  
-📖 **Project overview:** `PROJECT_SUMMARY.md`  
 📖 **Navigation:** `INDEX.md`  
+📖 **Bayesian inference:** `BAYESIAN_INFERENCE_EXPLAINED.md`  
+📖 **HGF guide:** `HGF_IMPLEMENTATION_GUIDE.md`  
 
 ---
 

@@ -2,38 +2,38 @@
 
 ## Quick Start
 
-Run the complete pipeline:
+**Run steps in order (1 → 2 → 3 → 4 → 5 → 6):**
+
 ```bash
-python run_pipeline.py
+python3 step1_generate_data.py
+python3 step2_estimate_uncertainty.py
+python3 step3_fit_traditional_evc.py
+python3 step4_fit_bayesian_evc.py
+python3 step5_compare_models.py
+python3 step6_visualize.py
 ```
 
-Or run individual steps:
-```bash
-python step1_load_data.py
-python step2_run_bayesian_updates.py
-python step3_compute_evc.py
-python step4_visualize.py
-```
+**Important:** You must run steps in numerical order. Each step depends on output from previous steps.
 
 ## Where is Bayesian Inference?
 
 See `BAYESIAN_INFERENCE_EXPLAINED.md` for details.
 
-**Short answer:** In `src/pipeline.py`:
-- Lines 114-129: `BayesianUncertaintyTracker.update()` - Bayesian belief updates
-- Lines 111-113: Belief decay and evidence accumulation
-- Lines 89-96: Uncertainty quantification from beliefs
+Bayesian inference is implemented in:
+- `models/bayesian_uncertainty.py` - Bayesian uncertainty estimation
+- `models/bayesian_evc.py` - Bayesian EVC model with uncertainty reduction
 
 ## Files
 
-- `run_pipeline.py` - Run complete pipeline
-- `step1_load_data.py` - Load and validate data
-- `step2_run_bayesian_updates.py` - Run Bayesian belief updates
-- `step3_compute_evc.py` - Compute EVC scores
-- `step4_visualize.py` - Create visualizations
+- `step1_generate_data.py` - **RUN FIRST** - Generate experimental data
+- `step2_estimate_uncertainty.py` - **RUN SECOND** (optional) - Add Bayesian uncertainty estimates
+- `step3_fit_traditional_evc.py` - **RUN THIRD** - Fit baseline EVC model
+- `step4_fit_bayesian_evc.py` - **RUN FOURTH** - Fit Bayesian EVC model
+- `step5_compare_models.py` - **RUN FIFTH** - Compare model performance
+- `step6_visualize.py` - **RUN SIXTH** - Create visualizations
 - `BAYESIAN_INFERENCE_EXPLAINED.md` - Detailed explanation of Bayesian inference
-- `LITERATURE_REVIEW.md` - Related approaches (DDM, HGF, etc.)
 - `HGF_IMPLEMENTATION_GUIDE.md` - Guide for Hierarchical Gaussian Filter
+- `HGF_SUMMARY.md` - Quick HGF overview
 - `proposal.md` - Original research proposal
 
 ## Requirements

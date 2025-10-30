@@ -119,7 +119,7 @@ STEP 5: MODEL COMPARISON
 
 1. ✅ Run test script
 2. ✅ Run full pipeline
-3. 📖 Read `IMPLEMENTATION_GUIDE.md` for details
+3. 📖 Read `RUN_STEPS.md` for detailed instructions
 4. 🔧 Customize parameters in `main_pipeline.py`
 5. 📊 Analyze results in `results/` directory
 6. 🎨 Modify visualizations in `utils/visualization.py`
@@ -134,8 +134,8 @@ The Bayesian model explicitly values reducing uncertainty, leading to better pre
 ## Support
 
 - Check `README.md` for overview
-- Read `IMPLEMENTATION_GUIDE.md` for detailed usage
-- Review `PROJECT_SUMMARY.md` for complete description
+- Read `RUN_STEPS.md` for detailed usage
+- Review `INDEX.md` for navigation
 - Examine code comments and docstrings
 
 ---

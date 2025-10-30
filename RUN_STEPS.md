@@ -1,5 +1,19 @@
 # Run Individual Steps Guide
 
+## ⚠️ IMPORTANT: Run Steps in Order
+
+**You MUST run the steps in numerical order (step1 → step2 → step3 → step4 → step5 → step6).**
+
+Each step depends on output files created by previous steps.
+
+## Step Execution Order
+
+```
+STEP 1 → STEP 2 → STEP 3 → STEP 4 → STEP 5 → STEP 6
+  ↓         ↓         ↓         ↓         ↓         ↓
+Data    Unc Est   Trad Fit  Bayes Fit  Compare  Visualize
+```
+
 Instead of running the full pipeline, you can run each step individually for easier debugging and inspection.
 
 ## Overview
@@ -15,14 +29,25 @@ The analysis is broken into 6 independent steps:
 
 ## Quick Start
 
-Run each step in order:
+**Run each step in this exact order:**
 
 ```bash
+# Step 1: Generate data (MUST RUN FIRST)
 python3 step1_generate_data.py
+
+# Step 2: Estimate uncertainty (OPTIONAL - can skip)
 python3 step2_estimate_uncertainty.py
+
+# Step 3: Fit traditional EVC model (requires Step 1)
 python3 step3_fit_traditional_evc.py
+
+# Step 4: Fit Bayesian EVC model (requires Step 1)
 python3 step4_fit_bayesian_evc.py
+
+# Step 5: Compare models (requires Steps 3 and 4)
 python3 step5_compare_models.py
+
+# Step 6: Create visualizations (requires Steps 1, 3, 4, 5)
 python3 step6_visualize.py
 ```
 
@@ -262,27 +287,42 @@ model = TraditionalEVC(
 )
 ```
 
-## File Dependencies
+## File Dependencies & Execution Order
+
+**CRITICAL: Steps must be run in numerical order (1 → 2 → 3 → 4 → 5 → 6)**
 
 ```
-Step 1 (generate_data)
-  ↓ creates data/behavioral_data.csv
+Step 1: step1_generate_data.py
+  ↓ Creates: data/behavioral_data.csv, data/neural_data.csv
+  ↓ Required by: Steps 2, 3, 4, 6
   
-Step 2 (estimate_uncertainty) [OPTIONAL]
-  ↓ creates data/behavioral_data_with_uncertainties.csv
+Step 2: step2_estimate_uncertainty.py [OPTIONAL]
+  ↓ Creates: data/behavioral_data_with_uncertainties.csv
+  ↓ Requires: Step 1
+  ↓ Can be skipped if using original uncertainty columns
   
-Step 3 (fit_traditional_evc)
-  ↓ creates results/traditional_evc_*.csv
+Step 3: step3_fit_traditional_evc.py
+  ↓ Creates: results/traditional_evc_model.pkl, results/traditional_evc_results.csv
+  ↓ Requires: Step 1
+  ↓ Required by: Steps 5, 6
   
-Step 4 (fit_bayesian_evc)
-  ↓ creates results/bayesian_evc_*.csv
+Step 4: step4_fit_bayesian_evc.py
+  ↓ Creates: results/bayesian_evc_model.pkl, results/bayesian_evc_results.csv
+  ↓ Requires: Step 1
+  ↓ Required by: Steps 5, 6
   
-Step 5 (compare_models)
-  ↓ creates results/model_comparison.csv
+Step 5: step5_compare_models.py
+  ↓ Creates: results/model_comparison.csv
+  ↓ Requires: Steps 3 and 4
+  ↓ Required by: Step 6
   
-Step 6 (visualize)
-  ↓ creates results/figures/*.png
+Step 6: step6_visualize.py
+  ↓ Creates: results/figures/*.png (6 plots)
+  ↓ Requires: Steps 1, 3, 4, 5
 ```
+
+**Minimum required sequence:**
+- Steps 1, 3, 4, 5, 6 (Step 2 is optional)
 
 ## Expected Runtime
 
@@ -326,8 +366,9 @@ After running all steps:
 
 - Check console output for error messages
 - Verify all dependencies installed: `pip install -r requirements.txt`
-- Read `IMPLEMENTATION_GUIDE.md` for detailed documentation
-- Check `PROJECT_SUMMARY.md` for overview
+- Read `README.md` for overview
+- Check `INDEX.md` for navigation
+- See `BAYESIAN_INFERENCE_EXPLAINED.md` for Bayesian details
 
 ---
 

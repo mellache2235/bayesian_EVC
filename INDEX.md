@@ -7,9 +7,9 @@
 | **[START_HERE.md](START_HERE.md)** | Choose your path to get started | 2 min |
 | **[QUICK_START.md](QUICK_START.md)** | Get running in 5 minutes | 2 min |
 | **[README.md](README.md)** | Project overview and structure | 5 min |
-| **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** | What was implemented and why | 10 min |
-| **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** | Detailed usage guide with examples | 20 min |
-| **[LITERATURE_REVIEW.md](LITERATURE_REVIEW.md)** | Related approaches (DDM, Bayesian, HGF) | 15 min |
+| **[RUN_STEPS.md](RUN_STEPS.md)** | Detailed step-by-step guide | 10 min |
+| **[STEP_BY_STEP.txt](STEP_BY_STEP.txt)** | Quick reference guide | 2 min |
+| **[BAYESIAN_INFERENCE_EXPLAINED.md](BAYESIAN_INFERENCE_EXPLAINED.md)** | Bayesian inference details | 10 min |
 | **[HGF_IMPLEMENTATION_GUIDE.md](HGF_IMPLEMENTATION_GUIDE.md)** | Hierarchical Gaussian Filter guide | 20 min |
 | **[HGF_SUMMARY.md](HGF_SUMMARY.md)** | Quick HGF overview and usage | 5 min |
 | **[proposal.md](proposal.md)** | Original research proposal | 10 min |
@@ -17,10 +17,7 @@
 ## 🚀 Executable Scripts
 
 ### Full Pipeline
-| File | Command | Purpose |
-|------|---------|---------|
-| **test_implementation.py** | `python3 test_implementation.py` | Quick test (2 min) |
-| **main_pipeline.py** | `python3 main_pipeline.py` | Full analysis (10 min) |
+**Note:** There is no single pipeline script. Run steps individually in order (1 → 2 → 3 → 4 → 5 → 6).
 
 ### Individual Steps (Recommended for Debugging)
 | File | Command | Purpose |
@@ -74,28 +71,28 @@
 ### I want to...
 
 **...understand what this project does**
-→ Read [README.md](README.md) then [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
+→ Read [README.md](README.md) then [START_HERE.md](START_HERE.md)
 
 **...run the code immediately**
-→ Follow [QUICK_START.md](QUICK_START.md)
+→ Follow [QUICK_START.md](QUICK_START.md) or [START_HERE.md](START_HERE.md)
 
 **...learn how to use the code**
-→ Read [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)
+→ Read [RUN_STEPS.md](RUN_STEPS.md) for detailed instructions
 
 **...understand the theory**
 → Read [proposal.md](proposal.md)
 
 **...modify the models**
-→ Check `models/` directory and [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) "Customization" section
+→ Check `models/` directory and step files for customization
 
 **...generate custom data**
-→ See [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) "Example 1: Generate Custom Data"
+→ See `step1_generate_data.py` for data generation parameters
 
 **...create custom visualizations**
-→ See [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) "Example 4: Custom Visualizations"
+→ See `step6_visualize.py` and `utils/visualization.py`
 
 **...understand the results**
-→ Check [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) "Expected Outputs" section
+→ Check `results/model_comparison.csv` and `results/figures/`
 
 ## 📖 Reading Order
 
@@ -105,11 +102,11 @@
 3. Run `python3 main_pipeline.py` - 10 min
 4. Browse `results/figures/` - 1 min
 
-### For Understanding (45 minutes)
+### For Understanding (30 minutes)
 1. [README.md](README.md) - 5 min
 2. [proposal.md](proposal.md) - 10 min
-3. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - 10 min
-4. [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) - 20 min
+3. [RUN_STEPS.md](RUN_STEPS.md) - 10 min
+4. [BAYESIAN_INFERENCE_EXPLAINED.md](BAYESIAN_INFERENCE_EXPLAINED.md) - 5 min
 
 ### For Development (2+ hours)
 1. All documentation above
@@ -165,7 +162,7 @@ Control allocation that explicitly values uncertainty reduction.
 4. Read [README.md](README.md)
 
 ### Intermediate
-1. Read [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)
+1. Read [RUN_STEPS.md](RUN_STEPS.md)
 2. Run examples
 3. Modify parameters
 4. Create custom analyses
@@ -199,9 +196,9 @@ Control allocation that explicitly values uncertainty reduction.
 
 ## 📞 Support Resources
 
-1. **Documentation**: Read the 5 markdown files
+1. **Documentation**: Read the markdown files listed above
 2. **Code Comments**: Extensive docstrings in all modules
-3. **Examples**: See [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)
+3. **Step-by-step guides**: See [RUN_STEPS.md](RUN_STEPS.md) and [STEP_BY_STEP.txt](STEP_BY_STEP.txt)
 4. **Test Script**: Run `test_implementation.py` to verify setup
 
 ## 🎯 Success Criteria

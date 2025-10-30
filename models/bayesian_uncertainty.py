@@ -1,9 +1,37 @@
 """
-Bayesian uncertainty estimation for cognitive control tasks.
+Bayesian Uncertainty Estimation for Cognitive Control Tasks
 
-Implements two types of uncertainty:
-1. Decision uncertainty: From trial-to-trial variability in evidence clarity
-2. State/rule uncertainty: From beliefs about task rules and conditions
+This module implements Bayesian inference methods to estimate two types of uncertainty
+that influence cognitive control allocation:
+
+1. DECISION UNCERTAINTY (Evidence-based uncertainty)
+   - Uncertainty about what the current evidence means
+   - Based on evidence clarity/quality
+   - Example: "How certain am I that this stimulus is a 'left' vs 'right'?"
+   - Measured via entropy and inverse of evidence clarity
+
+2. STATE/RULE UNCERTAINTY (Belief-based uncertainty)
+   - Uncertainty about which task rule/state is currently active
+   - Based on Bayesian belief updating over trials
+   - Example: "How certain am I that the current rule is 'respond to color' vs 'respond to shape'?"
+   - Measured via entropy of belief distribution over possible states
+
+THEORETICAL FOUNDATION:
+-----------------------
+Bayesian inference provides a principled way to:
+1. Update beliefs about task states based on observations
+2. Quantify uncertainty using information-theoretic measures (entropy)
+3. Track how uncertainty changes over time
+
+Bayes' Rule: P(state|observation) ∝ P(observation|state) × P(state)
+- Prior: P(state) - beliefs before seeing observation
+- Likelihood: P(observation|state) - probability of observation given state
+- Posterior: P(state|observation) - updated beliefs after seeing observation
+
+Entropy measures uncertainty:
+- H(P) = -Σ P(x) × log₂(P(x))
+- Maximum entropy = uniform distribution (maximum uncertainty)
+- Minimum entropy = point mass (no uncertainty, complete certainty)
 """
 
 import numpy as np
@@ -56,22 +84,55 @@ class BayesianUncertaintyEstimator:
         Returns:
             Dictionary with uncertainty measures
         """
-        # Decision uncertainty is inverse of clarity
+        # DECISION UNCERTAINTY CALCULATION
+        # Decision uncertainty is the inverse of evidence clarity
+        # Formula: U_decision = 1 - evidence_clarity
+        #
+        # Explanation:
+        # - evidence_clarity: 0 = completely ambiguous, 1 = completely clear
+        # - If evidence is clear (1.0) → uncertainty is low (0.0)
+        # - If evidence is ambiguous (0.0) → uncertainty is high (1.0)
+        # - This captures: "How uncertain am I about what this evidence means?"
         decision_uncertainty = 1 - evidence_clarity
         
-        # Confidence based on evidence clarity
-        # Using a sigmoid-like transformation
+        # CONFIDENCE CALCULATION
+        # Confidence is a sigmoid transformation of evidence clarity
+        # Formula: confidence = 1 / (1 + exp(-k × (clarity - 0.5)))
+        #
+        # Explanation:
+        # - Uses logistic/sigmoid function (S-shaped curve)
+        # - k = 5: steepness parameter (how sharp the transition)
+        # - (clarity - 0.5): centers the function at 0.5
+        # - Result: confidence smoothly transitions from 0 to 1
+        # - Higher clarity → higher confidence (but non-linear)
+        # - This captures: "How confident am I in my decision?"
         confidence = 1 / (1 + np.exp(-5 * (evidence_clarity - 0.5)))
         
-        # Entropy-based uncertainty measure
-        # Treat as probability of correct response
+        # ENTROPY-BASED UNCERTAINTY MEASURE
+        # Entropy quantifies uncertainty using information theory
+        # Formula: H(P) = -Σ P(x) × log₂(P(x))
+        #
+        # Explanation:
+        # - Treat evidence_clarity as probability of being correct
+        # - p_correct = evidence_clarity (probability of correct response)
+        # - p_incorrect = 1 - evidence_clarity (probability of incorrect response)
+        # - Entropy measures "surprise" or "information content"
+        # - Maximum entropy = 1 bit (when p_correct = 0.5, maximum uncertainty)
+        # - Minimum entropy = 0 bits (when p_correct = 0 or 1, no uncertainty)
+        #
+        # Why log base 2? Entropy is measured in bits (information theory)
         p_correct = evidence_clarity
         p_incorrect = 1 - p_correct
         
-        # Avoid log(0)
+        # Avoid log(0) which is undefined
+        # Clip probabilities to small epsilon values to ensure numerical stability
         p_correct = np.clip(p_correct, 1e-10, 1 - 1e-10)
         p_incorrect = np.clip(p_incorrect, 1e-10, 1 - 1e-10)
         
+        # Calculate entropy: H = -[p_correct × log₂(p_correct) + p_incorrect × log₂(p_incorrect)]
+        # This measures the uncertainty in bits
+        # Example: if p_correct = 0.5, entropy = 1 bit (maximum uncertainty)
+        #          if p_correct = 0.9, entropy ≈ 0.47 bits (low uncertainty)
         entropy = -(p_correct * np.log2(p_correct) + 
                    p_incorrect * np.log2(p_incorrect))
         
@@ -102,21 +163,59 @@ class BayesianUncertaintyEstimator:
             likelihood_matrix = np.array([0.8, 0.6]) if self.n_states == 2 else \
                                np.linspace(0.9, 0.5, self.n_states)
         
-        # Likelihood of observation given each state
-        if observation == 1:  # Correct
-            likelihoods = likelihood_matrix
-        else:  # Incorrect
-            likelihoods = 1 - likelihood_matrix
+        # COMPUTE LIKELIHOOD: P(observation|state)
+        # Likelihood matrix specifies: "If state X is active, what's the probability of this observation?"
+        #
+        # For correct observation (observation == 1):
+        #   likelihoods = likelihood_matrix
+        #   Example: if state 0 has accuracy 0.8, P(correct|state0) = 0.8
+        #
+        # For incorrect observation (observation == 0):
+        #   likelihoods = 1 - likelihood_matrix
+        #   Example: if state 0 has accuracy 0.8, P(incorrect|state0) = 0.2
+        if observation == 1:  # Correct response observed
+            likelihoods = likelihood_matrix  # P(correct|state)
+        else:  # Incorrect response observed
+            likelihoods = 1 - likelihood_matrix  # P(incorrect|state) = 1 - P(correct|state)
         
-        # Bayesian update: posterior ∝ likelihood × prior
+        # BAYESIAN UPDATE: Compute posterior using Bayes' rule
+        # Bayes' Rule: P(state|observation) ∝ P(observation|state) × P(state)
+        #
+        # Formula: posterior = likelihood × prior
+        #   - likelihood: P(observation|state) - probability of observation given state
+        #   - prior: self.state_beliefs - current beliefs P(state)
+        #   - posterior: P(state|observation) - updated beliefs
+        #
+        # Note: This is proportional (∝), not equal (=)
+        # We normalize below to make it a proper probability distribution
         posterior = likelihoods * self.state_beliefs
-        posterior = posterior / (posterior.sum() + 1e-10)  # Normalize
         
-        # Gradual belief updating (learning rate)
+        # NORMALIZE: Convert from proportional to actual probabilities
+        # Sum of probabilities must equal 1
+        # Formula: P(state|observation) = (likelihood × prior) / Σ(likelihood × prior)
+        # This ensures the posterior is a valid probability distribution
+        posterior = posterior / (posterior.sum() + 1e-10)  # +1e-10 prevents division by zero
+        
+        # GRADUAL BELIEF UPDATING (Learning Rate)
+        # Instead of jumping directly to posterior, we gradually update beliefs
+        # Formula: new_beliefs = (1 - α) × old_beliefs + α × posterior
+        #
+        # Explanation:
+        # - α (learning_rate): how much to trust the new observation
+        #   - α = 1: fully trust new observation → jump to posterior
+        #   - α = 0: ignore new observation → keep old beliefs
+        #   - α = 0.1: slowly update → smooth learning
+        #
+        # Why gradual updating?
+        # - Accounts for potential noise in observations
+        # - Prevents overreacting to single observations
+        # - Mimics how humans learn: gradually updating beliefs
         self.state_beliefs = (1 - self.learning_rate) * self.state_beliefs + \
                             self.learning_rate * posterior
         
-        # Ensure normalization
+        # ENSURE NORMALIZATION (safety check)
+        # Due to floating-point arithmetic, probabilities might not sum exactly to 1
+        # Renormalize to ensure they sum to 1 (required for valid probability distribution)
         self.state_beliefs = self.state_beliefs / self.state_beliefs.sum()
         
         return self.state_beliefs
@@ -128,22 +227,62 @@ class BayesianUncertaintyEstimator:
         Returns:
             Dictionary with state uncertainty measures
         """
+        # STATE UNCERTAINTY CALCULATION
+        # Quantify uncertainty about which state/rule is active using entropy
+        
         # Entropy of belief distribution
-        beliefs_clipped = np.clip(self.state_beliefs, 1e-10, 1)
+        # Formula: H(P) = -Σ P(state) × log₂(P(state))
+        #
+        # Explanation:
+        # - beliefs_clipped: probability distribution over states
+        # - Entropy measures "spread" of beliefs
+        #   - High entropy = beliefs spread evenly = high uncertainty
+        #   - Low entropy = beliefs concentrated on one state = low uncertainty
+        #
+        # Example with 2 states:
+        #   - Beliefs [0.5, 0.5]: entropy = 1 bit (maximum uncertainty)
+        #   - Beliefs [0.9, 0.1]: entropy ≈ 0.47 bits (low uncertainty)
+        #   - Beliefs [1.0, 0.0]: entropy = 0 bits (no uncertainty, complete certainty)
+        beliefs_clipped = np.clip(self.state_beliefs, 1e-10, 1)  # Clip to avoid log(0)
         entropy = -np.sum(beliefs_clipped * np.log2(beliefs_clipped))
         
-        # Maximum entropy (uniform distribution)
+        # MAXIMUM ENTROPY (uniform distribution)
+        # Maximum entropy occurs when beliefs are uniform (equal probability for all states)
+        # Formula: H_max = log₂(n_states)
+        #
+        # Example: with 2 states, max entropy = log₂(2) = 1 bit
+        #          with 4 states, max entropy = log₂(4) = 2 bits
         max_entropy = np.log2(self.n_states)
         
-        # Normalized uncertainty (0-1)
+        # NORMALIZED UNCERTAINTY (0-1 scale)
+        # Convert entropy to 0-1 scale for easier interpretation
+        # Formula: normalized_uncertainty = entropy / max_entropy
+        #
+        # Explanation:
+        # - 0 = no uncertainty (complete certainty about which state is active)
+        # - 1 = maximum uncertainty (completely uncertain, all states equally likely)
+        # - This normalized measure allows comparison across different numbers of states
         state_uncertainty = entropy / max_entropy if max_entropy > 0 else 0
         
-        # Confidence is inverse of uncertainty
+        # STATE CONFIDENCE
+        # Confidence is the inverse of uncertainty
+        # Formula: confidence = 1 - uncertainty
+        #
+        # Explanation:
+        # - High uncertainty → low confidence
+        # - Low uncertainty → high confidence
+        # - Ranges from 0 (no confidence) to 1 (complete confidence)
         state_confidence = 1 - state_uncertainty
         
-        # Most likely state
-        most_likely_state = np.argmax(self.state_beliefs)
-        state_probability = self.state_beliefs[most_likely_state]
+        # MOST LIKELY STATE
+        # Identify which state has the highest probability
+        # This is the "best guess" about which state is currently active
+        most_likely_state = np.argmax(self.state_beliefs)  # Index of maximum probability
+        state_probability = self.state_beliefs[most_likely_state]  # Probability of that state
+        
+        # Example: if beliefs = [0.2, 0.8], then:
+        #   - most_likely_state = 1 (second state)
+        #   - state_probability = 0.8 (80% confident it's state 1)
         
         return {
             'state_uncertainty': state_uncertainty,
