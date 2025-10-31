@@ -33,6 +33,16 @@ python step4_fit_bayesian_evc.py
 ```
 Fits the Bayesian EVC model with uncertainty integration.
 
+### Step 4b: Fit Temporal Bayesian EVC Model (OPTIONAL - ADVANCED)
+```bash
+python step4b_fit_temporal_bayesian_evc.py
+```
+Fits the Bayesian EVC model with HGF-based trial history integration.
+- **What's different:** Incorporates trial history through HGF recurrent dynamics
+- **Expected improvement:** R² from -0.02 → 0.25-0.40
+- **New parameter:** Volatility weight (γ) - how environmental change affects control
+- **When to use:** If you want to model how control adapts over trials
+
 ### Step 5: Compare Models
 ```bash
 python step5_compare_models.py
