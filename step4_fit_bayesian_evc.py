@@ -146,13 +146,12 @@ def main():
     print("\nInitializing Bayesian EVC model...")
     model = BayesianEVC(
         reward_weight=1.0,        # β_r: Reward sensitivity
-        effort_cost_weight=1.0, # c_e: Effort cost scaling
+        effort_cost_weight=1.0,   # c_e: Effort cost scaling
         uncertainty_weight=0.5,   # λ ← KEY: How much uncertainty reduction matters
-        effort_exponent=2.0,     # α: Effort cost exponent
-        n_states=2,              # Number of task states
-        learning_rate=0.1,       # Rate of belief updating
-        uncertainty_tolerance=0.5, # τ: Tolerance for uncertainty
-        control_efficiency=1.0   # η: Control efficiency at reducing uncertainty
+        effort_exponent=2.0,      # α: Effort cost exponent
+        baseline=0.5,             # Baseline control level
+        n_states=2,               # Number of task states
+        learning_rate=0.1         # Rate of belief updating
     )
     
     # FIT MODEL TO TRAINING DATA
@@ -193,6 +192,7 @@ def main():
     print("TRAINING RESULTS")
     print("-" * 70)
     print(f"Fitted parameters:")
+    print(f"  - Baseline: {train_results['baseline']:.4f}")
     print(f"  - Reward weight: {train_results['reward_weight']:.4f}")
     print(f"  - Effort cost weight: {train_results['effort_cost_weight']:.4f}")
     print(f"  - Uncertainty weight: {train_results['uncertainty_weight']:.4f} ← KEY PARAMETER!")
