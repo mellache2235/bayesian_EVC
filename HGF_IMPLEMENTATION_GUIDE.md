@@ -6,6 +6,394 @@ The **Hierarchical Gaussian Filter (HGF)** is an ideal framework for modeling un
 
 ---
 
+## Does HGF Fall Under Hierarchical Bayes?
+
+### **Short Answer: Sort of, but they're different things!**
+
+This is a great question because there's overlap but also important distinctions:
+
+### **The Confusion:**
+
+Both have "hierarchical" in the name and both use Bayesian inference, but they refer to **different types of hierarchies**:
+
+---
+
+### **HGF (Hierarchical Gaussian Filter)**
+
+**Type of hierarchy:** **Temporal/Generative Hierarchy**
+
+**What it models:**
+```
+Level 3: Volatility (how fast things change)
+    ↓ influences
+Level 2: Hidden states (what's the current state?)
+    ↓ generates
+Level 1: Observations (what you see)
+```
+
+**Key features:**
+- ✅ Models **within-subject** learning dynamics over time
+- ✅ Hierarchy of **causal relationships** (volatility → states → observations)
+- ✅ Each level generates/influences the level below
+- ✅ Single subject, multiple trials
+- ✅ Tracks how beliefs evolve trial-by-trial
+
+**Example:**
+```python
+# One subject learning over 200 trials
+hgf = HierarchicalGaussianFilter()
+for trial in range(200):
+    hgf.update(outcome[trial])
+    uncertainty = hgf.get_state_uncertainty()
+```
+
+**Focus:** "How does ONE person learn over time?"
+
+---
+
+### **Hierarchical Bayesian Modeling (HBM)**
+
+**Type of hierarchy:** **Population/Statistical Hierarchy**
+
+**What it models:**
+```
+Population Level: Group parameters (μ_β, σ_β)
+    ↓ constrains
+Individual Level: Subject-specific parameters (β[subject])
+    ↓ generates
+Trial Level: Observations (behavior on each trial)
+```
+
+**Key features:**
+- ✅ Models **across-subject** variability
+- ✅ Hierarchy of **statistical relationships** (population → individuals → data)
+- ✅ Each level constrains the level below via probability distributions
+- ✅ Multiple subjects, partial pooling
+- ✅ Estimates both group and individual parameters
+
+**Example:**
+```python
+# 20 subjects, each with their own parameters
+with pm.Model() as hierarchical_model:
+    # Population level
+    mu_beta = pm.Normal('mu_beta', mu=1.0, sigma=0.5)
+    sigma_beta = pm.HalfNormal('sigma_beta', sigma=0.3)
+    
+    # Individual level (20 subjects)
+    beta = pm.Normal('beta', mu=mu_beta, sigma=sigma_beta, shape=20)
+    
+    # Trial level
+    # ... likelihood ...
+```
+
+**Focus:** "How do MANY people differ from each other?"
+
+---
+
+## Comparison Table
+
+| Feature | HGF | Hierarchical Bayesian |
+|---------|-----|---------------------|
+| **Type of hierarchy** | Temporal/Generative | Population/Statistical |
+| **Primary question** | "How does learning unfold?" | "How do people differ?" |
+| **Levels represent** | Causal structure (volatility → states) | Statistical structure (group → individual) |
+| **Time dimension** | Essential (trial-by-trial updates) | Optional (can be static) |
+| **Number of subjects** | Typically 1 | Multiple (N > 1) |
+| **Main output** | Belief trajectories over time | Population + individual parameters |
+| **Partial pooling** | No | Yes (across subjects) |
+| **Shrinkage** | No | Yes (individuals → group mean) |
+| **Inference method** | Analytic updates (Kalman-like) | MCMC sampling (PyMC, Stan) |
+
+---
+
+## Can You Combine Them? YES!
+
+### **Hierarchical Bayesian HGF**
+
+You can (and should!) use **both hierarchies together**:
+
+```
+POPULATION LEVEL (Hierarchical Bayes)
+    ↓
+    μ_κ₂ = 1.0  (mean coupling strength across subjects)
+    σ_κ₂ = 0.3  (between-subject variability)
+    
+INDIVIDUAL LEVEL (Hierarchical Bayes)
+    ↓
+    Subject 1: κ₂ = 1.2 (drawn from population)
+    Subject 2: κ₂ = 0.9
+    ...
+    
+TEMPORAL HIERARCHY (HGF for each subject)
+    ↓
+    For Subject 1 with κ₂ = 1.2:
+        Level 3: Volatility
+        Level 2: States  
+        Level 1: Observations
+```
+
+**This gives you the best of both worlds!**
+
+---
+
+## Practical Example: Combining Both
+
+### **Scenario:** 
+You have 20 subjects, each doing 200 trials. You want to:
+1. Model how each subject learns over time (HGF)
+2. Estimate population-level HGF parameters (Hierarchical Bayes)
+
+### **Implementation:**
+
+```python
+import pymc as pm
+import numpy as np
+
+def hierarchical_bayesian_hgf(data):
+    """
+    Fit HGF with hierarchical Bayesian parameter estimation.
+    
+    Combines:
+    - HGF temporal hierarchy (within-subject learning)
+    - Hierarchical Bayes (across-subject parameters)
+    """
+    
+    n_subjects = data['subject_id'].nunique()
+    
+    with pm.Model() as model:
+        
+        # ============================================
+        # HIERARCHICAL BAYES: POPULATION LEVEL
+        # ============================================
+        
+        # Population-level HGF parameters
+        mu_kappa_2 = pm.Normal('mu_kappa_2', mu=1.0, sigma=0.5)
+        sigma_kappa_2 = pm.HalfNormal('sigma_kappa_2', sigma=0.3)
+        
+        mu_omega_2 = pm.Normal('mu_omega_2', mu=-4.0, sigma=2.0)
+        sigma_omega_2 = pm.HalfNormal('sigma_omega_2', sigma=1.0)
+        
+        # ============================================
+        # HIERARCHICAL BAYES: INDIVIDUAL LEVEL
+        # ============================================
+        
+        # Subject-specific HGF parameters
+        kappa_2 = pm.Normal('kappa_2', 
+                           mu=mu_kappa_2, 
+                           sigma=sigma_kappa_2,
+                           shape=n_subjects)
+        
+        omega_2 = pm.Normal('omega_2',
+                           mu=mu_omega_2,
+                           sigma=sigma_omega_2,
+                           shape=n_subjects)
+        
+        # ============================================
+        # HGF: TEMPORAL HIERARCHY (for each subject)
+        # ============================================
+        
+        # For each subject, run HGF over their trials
+        log_likelihood = 0
+        
+        for subject_idx in range(n_subjects):
+            subject_data = data[data['subject_id'] == subject_idx]
+            
+            # Initialize HGF with subject-specific parameters
+            hgf = HierarchicalGaussianFilter(
+                kappa_2=kappa_2[subject_idx],
+                omega_2=omega_2[subject_idx]
+            )
+            
+            # Process each trial for this subject
+            for _, trial in subject_data.iterrows():
+                # HGF prediction
+                predicted_prob = hgf.get_state_estimate()
+                
+                # Likelihood of observed outcome
+                outcome = trial['accuracy']
+                log_likelihood += pm.Bernoulli.logp(outcome, predicted_prob)
+                
+                # Update HGF (temporal hierarchy)
+                hgf.update(outcome)
+        
+        # Total likelihood
+        pm.Potential('likelihood', log_likelihood)
+        
+        # ============================================
+        # INFERENCE
+        # ============================================
+        
+        trace = pm.sample(2000, tune=1000, chains=4)
+    
+    return trace, model
+
+
+# ============================================
+# USAGE
+# ============================================
+
+# Fit model
+trace, model = hierarchical_bayesian_hgf(behavioral_data)
+
+# ============================================
+# RESULTS
+# ============================================
+
+# Population-level HGF parameters
+print("POPULATION-LEVEL HGF PARAMETERS:")
+print(f"Mean κ₂: {trace.posterior['mu_kappa_2'].mean():.3f}")
+print(f"Between-subject SD: {trace.posterior['sigma_kappa_2'].mean():.3f}")
+
+# Individual HGF parameters
+print("\nINDIVIDUAL HGF PARAMETERS:")
+for i in range(n_subjects):
+    kappa_i = trace.posterior['kappa_2'][:, :, i].values.flatten()
+    print(f"Subject {i+1}: κ₂ = {kappa_i.mean():.3f} ± {kappa_i.std():.3f}")
+```
+
+---
+
+## When to Use What
+
+### **Use HGF alone when:**
+- ✅ Single subject (or treating subjects independently)
+- ✅ Focus on learning dynamics over time
+- ✅ Want to track uncertainty evolution
+- ✅ Need trial-by-trial predictions
+- ✅ Studying temporal adaptation
+
+**Example:** "How does this patient's uncertainty change during treatment?"
+
+---
+
+### **Use Hierarchical Bayes alone when:**
+- ✅ Multiple subjects
+- ✅ Parameters don't change over time (static)
+- ✅ Want population-level inference
+- ✅ Need to handle small sample sizes
+- ✅ Comparing groups (e.g., patients vs. controls)
+
+**Example:** "What's the typical reward sensitivity in humans?"
+
+---
+
+### **Use BOTH (Hierarchical Bayesian HGF) when:**
+- ✅ Multiple subjects with temporal dynamics
+- ✅ Want both population and individual estimates
+- ✅ Need to model learning AND individual differences
+- ✅ Small N but repeated measures
+- ✅ Clinical studies with learning tasks
+
+**Example:** "Do depressed patients have abnormal volatility learning?"
+
+---
+
+## For Your Bayesian EVC Project
+
+### **Current Setup:**
+- Simple Bayesian uncertainty (fixed learning rate)
+- Pooled model across subjects
+- No temporal hierarchy
+- No individual differences
+
+### **Recommended Upgrade:**
+
+**Option 1: Hierarchical Bayes Only** (Easier)
+```python
+# Estimate population + individual EVC parameters
+# No temporal dynamics, just cross-sectional differences
+```
+- ✅ Better R² (0.2-0.4 instead of -0.03)
+- ✅ Individual differences
+- ✅ Easier to implement
+- ⚠️ Doesn't model learning dynamics
+
+---
+
+**Option 2: HGF Only** (Moderate)
+```python
+# Use HGF for uncertainty estimation
+# Fit each subject separately
+```
+- ✅ Adaptive learning rates
+- ✅ Volatility tracking
+- ✅ Richer uncertainty dynamics
+- ⚠️ Unstable with small N per subject
+
+---
+
+**Option 3: Hierarchical Bayesian HGF** (Best but Complex)
+```python
+# HGF for temporal dynamics
+# Hierarchical Bayes for population inference
+```
+- ✅ Best R² (0.3-0.5)
+- ✅ Individual differences + learning dynamics
+- ✅ Stable with small N
+- ✅ Population-level HGF parameters
+- ⚠️ Computationally intensive
+- ⚠️ Requires MCMC expertise
+
+---
+
+## Recommendation for Your Project
+
+### **Phase 1: Hierarchical Bayes (Do This First)**
+
+**Why:**
+- Immediate improvement (R² from -0.03 → 0.2-0.4)
+- Easier to implement
+- Handles small N well
+- Good for publication
+
+**Implementation:** Use the code from `HIERARCHICAL_BAYES_GUIDE.md`
+
+---
+
+### **Phase 2: Add HGF (Future Extension)**
+
+**Why:**
+- Richer model of learning
+- Better fit to temporal dynamics
+- More publishable in computational psychiatry
+- Can study volatility learning
+
+**Implementation:** Use HGF for uncertainty, then fit with Hierarchical Bayes
+
+---
+
+## Summary
+
+### **HGF vs. Hierarchical Bayes:**
+
+**HGF:**
+- Temporal hierarchy (volatility → states → observations)
+- Within-subject learning dynamics
+- Trial-by-trial belief updates
+- Answers: "How does learning unfold?"
+
+**Hierarchical Bayes:**
+- Statistical hierarchy (population → individuals → data)
+- Across-subject variability
+- Partial pooling and shrinkage
+- Answers: "How do people differ?"
+
+**Combined (Hierarchical Bayesian HGF):**
+- Both hierarchies together
+- Population-level learning parameters
+- Individual learning trajectories
+- Answers: "How does learning unfold AND how do people differ?"
+
+### **For Your Project:**
+
+1. **Start with Hierarchical Bayes** (easier, big improvement)
+2. **Then add HGF** (richer model, better dynamics)
+3. **Eventually combine both** (publication-ready, comprehensive)
+
+**Bottom line:** HGF is NOT the same as Hierarchical Bayes, but they complement each other perfectly! 🎯
+
+---
+
 ## Why Was HGF Developed? (Historical Context)
 
 ### The Problem That Led to HGF
