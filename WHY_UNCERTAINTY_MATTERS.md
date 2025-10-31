@@ -824,3 +824,4 @@ Control = f(Reward, Effort, Uncertainty)
 2. **Extensions:**
    - Shenhav, A., et al. (2017). "Toward a rational and mechanistic account of mental effort." *Annual Review of Neuroscience*, 40, 99-124.
 
+

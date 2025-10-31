@@ -1035,3 +1035,4 @@ Estimate uncertainty    Allocate control
 ### **Traditional EVC:**
 - Shenhav, A., et al. (2013). "The expected value of control." *Neuron*, 79(2), 217-240.
 
+
