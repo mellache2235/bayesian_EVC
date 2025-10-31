@@ -6,6 +6,388 @@ The **Hierarchical Gaussian Filter (HGF)** is an ideal framework for modeling un
 
 ---
 
+## Why Was HGF Developed? (Historical Context)
+
+### The Problem That Led to HGF
+
+**Traditional approaches to modeling learning had a fundamental limitation**: they couldn't explain how humans adapt their learning rates to environmental volatility.
+
+#### **The Classic Problem (Pre-HGF)**
+
+Imagine you're learning which restaurant has the best food:
+
+**Scenario A - Stable Environment:**
+- Restaurant quality stays constant
+- You should learn slowly (low learning rate)
+- One bad meal shouldn't change your mind
+
+**Scenario B - Volatile Environment:**
+- Restaurant quality changes frequently (new chef, inconsistent)
+- You should learn quickly (high learning rate)
+- One bad meal is important information!
+
+**The Issue**: Traditional models used **fixed learning rates** - they couldn't switch between slow and fast learning based on context.
+
+---
+
+### Traditional Approaches (What Came Before HGF)
+
+#### **1. Rescorla-Wagner Model (1972) - The Classic**
+
+**Formula:**
+```
+V(t+1) = V(t) + α × [R(t) - V(t)]
+```
+
+Where:
+- `V(t)` = Value/belief at time t
+- `α` = Learning rate (FIXED, e.g., 0.1)
+- `R(t)` = Reward received
+- `[R(t) - V(t)]` = Prediction error
+
+**What it does:**
+- Simple, elegant model of associative learning
+- Updates beliefs based on prediction errors
+- Used extensively in neuroscience (dopamine = prediction error!)
+
+**Limitations:**
+- ❌ **Fixed learning rate** - can't adapt to volatility
+- ❌ **No uncertainty tracking** - doesn't know when it's uncertain
+- ❌ **No volatility estimation** - can't detect environmental changes
+- ❌ **Single-level** - only tracks values, not meta-information
+
+**Example Problem:**
+```
+Trials 1-50:  Restaurant is consistently good (α = 0.1 is perfect)
+Trial 51:     New chef! Quality drops
+Trials 52-70: Still using α = 0.1 → takes 20 trials to relearn
+```
+
+**Why it fails**: Can't detect the regime change and speed up learning.
+
+---
+
+#### **2. Kalman Filter (1960) - The Engineering Solution**
+
+**Formula:**
+```
+# Prediction
+μ̂(t) = μ(t-1)
+σ̂²(t) = σ²(t-1) + Q  # Q = process noise (FIXED)
+
+# Update
+K(t) = σ̂²(t) / (σ̂²(t) + R)  # Kalman gain (adaptive!)
+μ(t) = μ̂(t) + K(t) × [observation - μ̂(t)]
+σ²(t) = (1 - K(t)) × σ̂²(t)
+```
+
+**What it does:**
+- Optimal Bayesian filter for linear-Gaussian systems
+- Tracks both estimate (μ) and uncertainty (σ²)
+- Learning rate (Kalman gain K) adapts to uncertainty
+- Used in GPS, robotics, aerospace
+
+**Advantages over Rescorla-Wagner:**
+- ✅ **Tracks uncertainty** explicitly
+- ✅ **Adaptive learning rate** (based on uncertainty)
+- ✅ **Optimal** for linear systems
+
+**Limitations:**
+- ❌ **Fixed process noise (Q)** - assumes constant volatility
+- ❌ **Single-level** - doesn't model meta-uncertainty
+- ❌ **Can't learn volatility** - Q is a parameter, not estimated
+- ❌ **Linear assumptions** - doesn't handle nonlinear observations well
+
+**Example Problem:**
+```
+Trials 1-50:  Q = 0.01 (low volatility) → works well
+Trial 51:     Volatility increases! But Q is still 0.01
+Trials 52-70: Slow to adapt because Q doesn't change
+```
+
+**Why it fails**: Can't detect that volatility itself has changed.
+
+---
+
+#### **3. Pearce-Hall Model (1980) - Attention-Weighted Learning**
+
+**Formula:**
+```
+α(t) = γ × |δ(t-1)|  # Learning rate based on recent surprise
+V(t+1) = V(t) + α(t) × δ(t)
+```
+
+**What it does:**
+- Learning rate increases after surprising outcomes
+- Models attention to prediction errors
+- More biologically plausible than Rescorla-Wagner
+
+**Advantages:**
+- ✅ **Adaptive learning rate** (based on surprise)
+- ✅ **Captures attention effects**
+
+**Limitations:**
+- ❌ **Reactive, not predictive** - only adapts AFTER surprise
+- ❌ **No uncertainty tracking** - uses surprise as proxy
+- ❌ **No volatility estimation** - just responds to recent errors
+- ❌ **Heuristic** - not derived from optimal Bayesian principles
+
+**Example:**
+```
+Trial 50:  Big surprise! → α increases
+Trial 51:  High learning rate (good!)
+Trial 52:  No surprise → α drops back down
+Trial 53:  Another surprise! → α increases again (reactive)
+```
+
+**Why it's limited**: Always one step behind. Can't anticipate volatility.
+
+---
+
+#### **4. Bayesian Change-Point Detection (Adams & MacKay, 2007)**
+
+**Formula:**
+```
+P(change_point | data) = compute probability that environment just changed
+If change_point detected → reset beliefs
+```
+
+**What it does:**
+- Explicitly models discrete change points
+- Computes probability that a regime shift occurred
+- Resets learning when change detected
+
+**Advantages:**
+- ✅ **Detects regime changes** explicitly
+- ✅ **Principled Bayesian approach**
+- ✅ **Can handle abrupt changes**
+
+**Limitations:**
+- ❌ **Discrete changes only** - assumes step-function volatility
+- ❌ **Binary decision** - either change or no change
+- ❌ **Doesn't model gradual volatility changes**
+- ❌ **Computationally expensive** (maintains multiple hypotheses)
+
+**Why it's limited**: Real environments often have gradual, continuous changes in volatility, not just discrete jumps.
+
+---
+
+### Enter the HGF (Mathys et al., 2011, 2014)
+
+#### **The Key Insight**
+
+What if we treat **volatility itself as a hidden variable that needs to be learned**?
+
+Instead of:
+- Fixed learning rate (Rescorla-Wagner) ❌
+- Fixed process noise (Kalman Filter) ❌
+- Reactive surprise (Pearce-Hall) ❌
+- Discrete change points (Change-Point Detection) ❌
+
+Do this:
+- **Learn the volatility** from data ✅
+- **Hierarchical structure**: beliefs about states AND beliefs about volatility ✅
+- **Continuous adaptation**: smoothly adjust to changing volatility ✅
+- **Optimal Bayesian inference**: provably optimal under assumptions ✅
+
+#### **The HGF Solution**
+
+```
+Level 3: Volatility (μ₃, σ₃²)
+    ↓ "How fast are things changing?"
+Level 2: States (μ₂, σ₂²)  
+    ↓ "What is the current state?"
+Level 1: Observations
+    "What did I observe?"
+```
+
+**Key Innovation**: 
+- Level 2 uncertainty depends on Level 3 volatility
+- Level 3 volatility is LEARNED from prediction errors
+- Learning rate emerges automatically from the hierarchy
+
+**Formula (simplified):**
+```python
+# Uncertainty at level 2 increases with volatility at level 3
+σ₂²(t) = σ₂²(t-1) + exp(μ₃(t-1))  # Volatility controls uncertainty growth
+
+# Volatility at level 3 is updated based on how much uncertainty changed
+δ₃ = (actual_uncertainty_change - expected_uncertainty_change)
+μ₃(t) = μ₃(t-1) + learning_rate × δ₃
+
+# Learning rate emerges from the hierarchy
+α = σ₂² / (σ₂² + observation_precision)
+```
+
+**What this achieves:**
+- High volatility → high uncertainty → high learning rate (fast adaptation)
+- Low volatility → low uncertainty → low learning rate (stable learning)
+- **Volatility is learned**, not assumed!
+
+---
+
+### Comparison Table: Traditional vs. HGF
+
+| Feature | Rescorla-Wagner | Kalman Filter | Pearce-Hall | Change-Point | **HGF** |
+|---------|----------------|---------------|-------------|--------------|---------|
+| **Year** | 1972 | 1960 | 1980 | 2007 | **2011** |
+| **Learning Rate** | Fixed | Adaptive (uncertainty) | Adaptive (surprise) | Reset at changes | **Adaptive (volatility)** |
+| **Tracks Uncertainty** | ❌ No | ✅ Yes | ❌ No | ✅ Yes | **✅ Yes (multi-level)** |
+| **Learns Volatility** | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Yes** |
+| **Hierarchical** | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Yes (3+ levels)** |
+| **Continuous Adaptation** | ❌ No | ⚠️ Limited | ⚠️ Reactive | ❌ Discrete | **✅ Yes** |
+| **Optimal Bayesian** | ❌ No | ✅ Yes (linear) | ❌ No | ✅ Yes | **✅ Yes (nonlinear)** |
+| **Computational Cost** | Low | Low | Low | High | **Medium** |
+| **Biological Plausibility** | High | Medium | High | Low | **High** |
+| **Clinical Applications** | Limited | Limited | Limited | Limited | **Extensive** |
+
+---
+
+### Why HGF Was the Breakthrough
+
+#### **1. Solves the "Meta-Learning" Problem**
+
+Traditional models: "I need to learn the task"
+HGF: "I need to learn the task AND learn how to learn (volatility)"
+
+This is **meta-learning** - learning about learning itself.
+
+#### **2. Matches Human Behavior**
+
+Humans naturally:
+- Learn faster in volatile environments ✅
+- Learn slower in stable environments ✅
+- Adjust learning rates smoothly, not abruptly ✅
+- Track both "what's happening" and "how fast things change" ✅
+
+HGF captures all of this!
+
+#### **3. Neural Correlates**
+
+Brain regions track HGF quantities:
+- **Anterior Cingulate Cortex (ACC)**: Tracks precision-weighted prediction errors (δ₂ × π₂)
+- **Insula**: Tracks volatility (μ₃)
+- **Dorsolateral PFC**: Tracks state uncertainty (σ₂²)
+- **Dopamine**: Tracks prediction errors (δ₁, δ₂)
+
+This wasn't designed to fit the brain - it emerged from optimal inference!
+
+#### **4. Clinical Relevance**
+
+HGF parameters differ in:
+- **Schizophrenia**: Abnormal volatility estimation (high κ₂)
+- **Autism**: Reduced belief updating (low precision)
+- **Anxiety**: Overestimation of volatility (high ω₂)
+- **Depression**: Reduced learning from positive outcomes
+
+This makes HGF a powerful tool for computational psychiatry.
+
+---
+
+### How One's Mind Goes to HGF as a Solution
+
+#### **The Reasoning Chain:**
+
+1. **Problem**: "I need to model uncertainty in learning"
+   → Start with Bayesian inference
+
+2. **Issue**: "But learning rates should adapt to volatility"
+   → Consider Kalman Filter (tracks uncertainty)
+
+3. **Issue**: "But volatility itself changes over time"
+   → Need to model volatility as a hidden variable
+
+4. **Issue**: "But I don't know the volatility - it's hidden!"
+   → Need to INFER volatility from data
+
+5. **Solution**: "What if I treat volatility as another level in a hierarchy?"
+   → **This is the HGF insight!**
+
+6. **Implementation**: "Use Bayesian inference at each level"
+   → Prediction errors propagate up the hierarchy
+   → Each level updates based on errors from below
+
+7. **Result**: "Learning rate emerges automatically from the hierarchy"
+   → No need to hand-tune learning rates!
+   → Optimal adaptation to volatility
+
+#### **The "Aha!" Moment**
+
+The key insight is recognizing that **uncertainty about states** and **volatility of states** are related but distinct:
+
+- **Uncertainty (σ₂²)**: "How sure am I about the current state?"
+- **Volatility (μ₃)**: "How fast is the state changing?"
+
+Traditional models conflated these or ignored volatility entirely. HGF separates them into a hierarchy.
+
+---
+
+### When to Use Each Approach
+
+#### **Use Rescorla-Wagner if:**
+- ✅ You want maximum simplicity
+- ✅ Environment is stable (low volatility)
+- ✅ You're modeling basic associative learning
+- ✅ You need fast computation
+- ✅ You're teaching/explaining learning basics
+
+#### **Use Kalman Filter if:**
+- ✅ Your system is truly linear-Gaussian
+- ✅ Volatility is constant and known
+- ✅ You need real-time tracking (e.g., GPS)
+- ✅ Computational efficiency is critical
+- ✅ You have engineering applications
+
+#### **Use Pearce-Hall if:**
+- ✅ You're modeling attention effects
+- ✅ You want biological plausibility
+- ✅ Simple adaptive learning is sufficient
+- ✅ You don't need optimal inference
+
+#### **Use Change-Point Detection if:**
+- ✅ Changes are truly discrete/abrupt
+- ✅ You need to detect specific regime shifts
+- ✅ You can afford computational cost
+- ✅ Binary detection is sufficient
+
+#### **Use HGF if:**
+- ✅ **Volatility changes over time** ← Most important!
+- ✅ You need adaptive learning rates
+- ✅ You want optimal Bayesian inference
+- ✅ You're studying human learning/decision-making
+- ✅ You need multi-level uncertainty tracking
+- ✅ You're doing computational psychiatry
+- ✅ You want to model meta-learning
+- ✅ Neural correlates matter
+
+---
+
+### For Your Bayesian EVC Project
+
+**Why HGF is relevant:**
+
+Your project involves:
+1. **Uncertainty estimation** - HGF provides principled uncertainty
+2. **Cognitive control** - Control should adapt to volatility
+3. **Multiple uncertainty types** - Decision vs. state uncertainty
+4. **Learning dynamics** - How uncertainty changes over trials
+
+**Current Setup (Simple Bayesian)**:
+- Fixed learning rate (α = 0.1)
+- Assumes constant volatility
+- Good for proof-of-concept
+
+**HGF Upgrade Would Provide**:
+- Adaptive learning rates
+- Volatility tracking
+- Richer uncertainty dynamics
+- Better fit to human behavior
+- Publishable in computational psychiatry journals
+
+**Bottom Line**: HGF isn't just "another method" - it's the solution that emerged from recognizing that **volatility itself needs to be learned**, not assumed. This was a conceptual breakthrough in computational neuroscience.
+
+---
+
 ## What is the HGF?
 
 ### Key Concept
