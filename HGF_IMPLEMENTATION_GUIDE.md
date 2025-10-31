@@ -52,6 +52,254 @@ When volatility is high → uncertainty increases → learning rate increases �
 
 ---
 
+## HGF Variable Glossary (Complete Reference)
+
+### 📚 Understanding HGF Notation
+
+The HGF uses specific notation that can be confusing. Here's what **every variable** means:
+
+---
+
+### **Core Symbols**
+
+| Symbol | Name | Meaning |
+|--------|------|---------|
+| `t` | Time | Current trial number (e.g., trial 1, 2, 3...) |
+| `x` | True state | The **actual** (hidden) state of the world |
+| `μ` (mu) | Belief/Mean | Your **estimate** of the state (what you think) |
+| `σ²` (sigma squared) | Variance | **Uncertainty** about your estimate (how sure you are) |
+| `π` (pi) | Precision | **Inverse of variance**: π = 1/σ² (higher = more certain) |
+| `δ` (delta) | Prediction error | Difference between what you expected and what you observed |
+| `α` (alpha) | Learning rate | How much to update beliefs from new information (0-1) |
+
+---
+
+### **Level Subscripts**
+
+| Subscript | Level | What It Represents |
+|-----------|-------|-------------------|
+| `₁` | Level 1 | **Observations** - what you actually see/experience |
+| `₂` | Level 2 | **Hidden states** - underlying rules/probabilities |
+| `₃` | Level 3 | **Volatility** - how fast things are changing |
+
+**Example**: `μ₂` = "your belief about the hidden state at level 2"
+
+---
+
+### **Time Subscripts**
+
+| Notation | Meaning |
+|----------|---------|
+| `μ₂,t` | Belief at level 2 at **current** time t |
+| `μ₂,t-1` | Belief at level 2 at **previous** time (t-1) |
+| `μ₂,t+1` | Belief at level 2 at **next** time (t+1) |
+| `u₁:t` | All observations from trial 1 up to trial t |
+
+---
+
+### **Level 1: Observations (What You See)**
+
+| Variable | Name | Meaning | Example |
+|----------|------|---------|---------|
+| `u_t` | Observation | Actual outcome you observe | 1 (correct) or 0 (incorrect) |
+| `μ₁,t` | Expected observation | What you **predict** you'll see | "I expect 70% chance of success" |
+
+**In plain English**: 
+- `u_t` = "Did I get it right?" (the actual result)
+- `μ₁,t` = "What did I think would happen?" (your prediction)
+
+---
+
+### **Level 2: Hidden States (What You Believe)**
+
+| Variable | Name | Meaning | Example | Range |
+|----------|------|---------|---------|-------|
+| `x₂,t` | True state | **Actual** hidden state (unknown to you) | True reward probability = 0.7 | -∞ to +∞ (logit space) |
+| `μ₂,t` | Belief about state | Your **estimate** of the hidden state | "I think reward prob = 0.65" | -∞ to +∞ (logit space) |
+| `σ₂,t²` | State uncertainty | How **uncertain** you are about the state | High uncertainty = 2.0, Low = 0.1 | 0 to ∞ |
+| `π₂,t` | State precision | How **certain** you are (inverse of uncertainty) | π = 1/σ² | 0 to ∞ |
+
+**In plain English**:
+- `x₂,t` = "The true rule" (you never know this directly)
+- `μ₂,t` = "What I think the rule is"
+- `σ₂,t²` = "How unsure I am about the rule" (bigger = more unsure)
+- `π₂,t` = "How confident I am" (bigger = more confident)
+
+**Transformation**: To convert to probability space (0-1), use sigmoid: `p = 1/(1 + exp(-μ₂))`
+
+---
+
+### **Level 3: Volatility (How Fast Things Change)**
+
+| Variable | Name | Meaning | Example | Range |
+|----------|------|---------|---------|-------|
+| `x₃,t` | True volatility | **Actual** rate of change (unknown) | Environment changes fast | -∞ to +∞ (log space) |
+| `μ₃,t` | Volatility estimate | Your **estimate** of how fast things change | "I think rules change slowly" | -∞ to +∞ (log space) |
+| `σ₃,t²` | Volatility uncertainty | Uncertainty about volatility | "Not sure if stable or volatile" | 0 to ∞ |
+
+**In plain English**:
+- `x₃,t` = "How fast the rules are actually changing"
+- `μ₃,t` = "How fast I think the rules are changing"
+- `σ₃,t²` = "How unsure I am about the rate of change"
+
+**Transformation**: To get actual volatility, use exponential: `volatility = exp(μ₃)`
+
+---
+
+### **Parameters (Set Before Running HGF)**
+
+These are **fixed** parameters you set at the beginning:
+
+| Parameter | Name | Meaning | Typical Value | What It Controls |
+|-----------|------|---------|---------------|------------------|
+| `κ₂` (kappa) | Coupling strength | How much level 3 influences level 2 | 1.0 | Strength of volatility effect |
+| `ω₂` (omega) | Baseline log-volatility | Base rate of change at level 2 | -4.0 | How much states drift by default |
+| `ω₃` (omega) | Volatility drift | How much volatility itself changes | -6.0 | Stability of volatility |
+| `μ₂,₀` | Initial belief | Starting belief about state | 0.0 | Where you start (logit space) |
+| `μ₃,₀` | Initial volatility | Starting volatility estimate | 0.0 | Initial volatility belief |
+| `σ₂,₀²` | Initial uncertainty | Starting uncertainty at level 2 | 1.0 | How uncertain you start |
+| `σ₃,₀²` | Initial volatility unc. | Starting uncertainty at level 3 | 1.0 | Uncertainty about volatility |
+
+**In plain English**:
+- `κ₂` = "How much does volatility affect learning?" (bigger = more effect)
+- `ω₂` = "How much do rules naturally drift?" (bigger = more drift)
+- `ω₃` = "How stable is the volatility?" (smaller = more stable)
+- Initial values = "What do I believe at the very start?"
+
+---
+
+### **Derived Quantities (Computed Each Trial)**
+
+| Variable | Name | Formula | Meaning |
+|----------|------|---------|---------|
+| `δ₁,t` | Level 1 prediction error | `u_t - μ₁,t` | Surprise at observation |
+| `δ₂,t` | Level 2 prediction error | `w₂ × δ₁,t` | Weighted surprise |
+| `δ₃,t` | Level 3 prediction error | Complex (see below) | Surprise about volatility |
+| `π̂₂,t` (pi-hat) | Predicted precision | `1/(σ₂² + exp(κ₂μ₃ + ω₂))` | Expected certainty before update |
+| `α₂,t` | Learning rate | `σ₂²/(σ₂² + 1/π̂₂)` | How much to learn from this trial |
+| `w₂` | Observation weight | `μ₁(1-μ₁)` for binary | Sigmoid derivative |
+
+**In plain English**:
+- `δ₁` = "How surprised am I by what I saw?"
+- `δ₂` = "Weighted surprise" (accounts for uncertainty)
+- `π̂₂` = "How certain should I be before seeing the outcome?"
+- `α₂` = "How much should I update my beliefs?" (0 = don't update, 1 = completely revise)
+
+---
+
+### **Complete Update Flow (Step-by-Step)**
+
+Here's what happens on **each trial**:
+
+#### **1. PREDICTION STEP** (Before seeing outcome)
+```python
+# Predict precision (certainty) for this trial
+π̂₂,t = 1 / (σ₂,t-1² + exp(κ₂ × μ₃,t-1 + ω₂))
+```
+- **What it means**: "Based on my current uncertainty and volatility, how certain should I be?"
+- Higher volatility → lower predicted precision → expect more uncertainty
+
+#### **2. OBSERVATION** (See the outcome)
+```python
+u_t = 1  # or 0 (correct/incorrect)
+μ₁,t = sigmoid(μ₂,t-1)  # What I predicted
+```
+- **What it means**: "I predicted X, but I observed Y"
+
+#### **3. PREDICTION ERROR** (Compute surprise)
+```python
+δ₁,t = u_t - μ₁,t  # Raw prediction error
+w₂ = μ₁,t × (1 - μ₁,t)  # Observation weight (sigmoid derivative)
+δ₂,t = w₂ × δ₁,t  # Weighted prediction error
+```
+- **What it means**: "How wrong was I? Weight by how uncertain my prediction was"
+
+#### **4. UPDATE LEVEL 2** (Update beliefs about state)
+```python
+# Update precision (certainty)
+π₂,t = π̂₂,t + w₂²
+σ₂,t² = 1 / π₂,t  # Convert back to variance
+
+# Update belief (mean)
+μ₂,t = μ₂,t-1 + σ₂,t² × δ₂,t
+```
+- **What it means**: 
+  - "I'm now more certain" (precision increases)
+  - "I update my belief based on the surprise"
+
+#### **5. UPDATE LEVEL 3** (Update volatility estimate)
+```python
+# Compute volatility prediction error
+δ₃,t = (1/σ₂,t² + (μ₂,t - μ₂,t-1)²/σ₂,t² - 1/π̂₂,t) / 2
+
+# Update volatility
+μ₃,t = μ₃,t-1 + κ₂ × σ₃,t² × δ₃,t
+```
+- **What it means**: "Did things change more or less than I expected? Update my volatility estimate"
+
+#### **6. COMPUTE LEARNING RATE** (For interpretation)
+```python
+α₂,t = σ₂,t² / (σ₂,t² + 1/π̂₂,t)
+```
+- **What it means**: "How much did I actually learn from this trial?"
+- α close to 0 = barely updated (confident in old belief)
+- α close to 1 = completely revised belief (very uncertain or volatile)
+
+---
+
+### **Practical Example with Numbers**
+
+Let's walk through **one trial**:
+
+**Setup**: You're learning which color is rewarded (blue vs. red)
+
+**Before Trial 10**:
+- `μ₂ = 0.5` (logit space) → probability ≈ 0.62 "I think blue is rewarded 62% of the time"
+- `σ₂² = 1.0` → "I'm moderately uncertain"
+- `μ₃ = -4.0` (log space) → volatility ≈ 0.018 "Things change slowly"
+
+**Trial 10**: You choose blue and get rewarded!
+
+**Step 1 - Prediction**:
+```python
+π̂₂ = 1 / (1.0 + exp(1.0 × (-4.0) + (-4.0))) = 1 / 1.0003 ≈ 1.0
+# "I expect to be about as certain as I was"
+```
+
+**Step 2 - Observation**:
+```python
+u = 1  # Rewarded!
+μ₁ = sigmoid(0.5) = 0.62  # I predicted 62% chance
+```
+
+**Step 3 - Prediction Error**:
+```python
+δ₁ = 1 - 0.62 = 0.38  # "Positive surprise! Better than expected"
+w₂ = 0.62 × 0.38 = 0.24
+δ₂ = 0.24 × 0.38 = 0.09
+```
+
+**Step 4 - Update Belief**:
+```python
+π₂ = 1.0 + 0.24² = 1.06
+σ₂² = 1/1.06 = 0.94  # Uncertainty decreased slightly
+μ₂ = 0.5 + 0.94 × 0.09 = 0.58  # Belief increased
+# New probability: sigmoid(0.58) = 0.64 "Now I think 64% chance"
+```
+
+**Step 5 - Learning Rate**:
+```python
+α = 0.94 / (0.94 + 1/1.0) = 0.48
+# "I updated my belief by 48% of the prediction error"
+```
+
+**Result**: 
+- Belief went from 62% → 64% (small update, as expected in stable environment)
+- Uncertainty decreased slightly
+- Learning rate was moderate (0.48)
+
+---
+
 ## HGF Mathematical Framework
 
 ### Three-Level HGF (Standard)
