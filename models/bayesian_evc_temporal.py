@@ -348,3 +348,4 @@ if __name__ == '__main__':
     plt.savefig('results/hgf_temporal_dynamics.png', dpi=300)
     print("\n✓ Saved temporal dynamics plot to results/hgf_temporal_dynamics.png")
 
+
