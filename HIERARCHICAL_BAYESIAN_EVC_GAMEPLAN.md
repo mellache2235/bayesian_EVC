@@ -18,6 +18,92 @@ We can vary task clarity (evidence uncertainty) and rule stability (state uncert
 
 ---
 
+## What the Modeling Specifically Entails
+
+### **Model Architecture: Three-Level Hierarchical Structure**
+
+Our hierarchical Bayesian EVC model operates at three distinct levels, each capturing different sources of variability in cognitive control allocation:
+
+**Level 1 - Population (Group-Level Parameters):**
+At the highest level, we estimate parameters that describe the typical child and the variability across children in our sample. These hyperparameters include the mean uncertainty weight (μ_λ), which represents how much uncertainty matters for control allocation in the average child, and the between-child standard deviation (σ_λ), which quantifies individual differences. These population-level parameters are estimated with prior distributions: μ_λ ~ Normal(0.5, 0.3) and σ_λ ~ HalfNormal(0.2), reflecting our theoretical expectation that uncertainty should matter (centered around 0.5) but allowing the data to inform the final estimate. Similarly, we estimate population-level distributions for reward sensitivity (μ_βr, σ_βr), effort cost (μ_βe, σ_βe), and baseline control (μ_baseline, σ_baseline).
+
+**Level 2 - Individual (Child-Specific Parameters):**
+Each child receives their own set of parameters that are drawn from the population distributions. For example, child i's uncertainty weight λᵢ is sampled from Normal(μ_λ, σ_λ). This means that while each child can have their own unique uncertainty sensitivity, their parameter is constrained by—and contributes to—the group-level distribution. This partial pooling mechanism is critical: children with limited or noisy data have their estimates "shrunk" toward the population mean, preventing extreme or unstable estimates, while children with more informative data retain estimates closer to their individual patterns. The degree of shrinkage is not arbitrary but emerges naturally from the Bayesian framework based on the precision of individual-level versus population-level information.
+
+**Level 3 - Trial (Observation-Level Predictions):**
+At the lowest level, for each individual trial, we compute predicted control allocation using the Bayesian EVC formula with the child's individual parameters. Specifically, for trial t of child i, the predicted control is:
+
+```
+Control_predicted[i,t] = baseline[i] + 
+    (β_r[i] × Reward[t] × Accuracy[t] + λ[i] × Uncertainty[t]) / (2 × β_e[i])
+```
+
+The observed control (measured via RT, pupil dilation, or neural activity) is then modeled as coming from a normal distribution centered on this prediction with observation noise σ_obs:
+
+```
+Control_observed[i,t] ~ Normal(Control_predicted[i,t], σ_obs)
+```
+
+This likelihood function connects our theoretical model to the actual data, allowing us to estimate all parameters simultaneously while properly accounting for measurement noise.
+
+### **Inference via Markov Chain Monte Carlo (MCMC)**
+
+Parameter estimation is conducted using MCMC sampling implemented in PyMC, a modern probabilistic programming framework. Rather than finding single point estimates (as in maximum likelihood), MCMC generates samples from the full posterior distribution P(parameters | data), giving us complete uncertainty quantification for every parameter. We run 4 parallel chains with 2,000 samples each after 1,000 burn-in samples, using the No-U-Turn Sampler (NUTS), an efficient variant of Hamiltonian Monte Carlo. Convergence is assessed via the Gelman-Rubin statistic (R̂ < 1.01) and effective sample size (ESS > 400 per parameter). This approach yields not just point estimates but full posterior distributions, allowing us to make probabilistic statements like "the probability that μ_λ > 0 is 99.5%", which provides much stronger evidence than traditional p-values.
+
+### **Key Model Parameters and Their Interpretation**
+
+The model estimates several theoretically meaningful parameters:
+
+**Uncertainty Weight (λ):** This is our primary parameter of interest. It quantifies how much uncertainty affects control allocation. A value of λ = 0.4 means that a one-unit increase in uncertainty contributes as much to control allocation as a 0.4-unit increase in expected value (reward × accuracy). At the population level, μ_λ tells us how much uncertainty matters for the typical child. At the individual level, λᵢ for each child enables us to identify those who are unusually sensitive to uncertainty (high λ, potentially math-anxious) or unusually insensitive (low λ, potentially overconfident or impulsive).
+
+**Reward Sensitivity (β_r):** This parameter captures how much children are motivated by rewards (points, praise, or intrinsic satisfaction). Higher values indicate greater motivation. Individual differences in β_r can reveal children who are reward-driven versus those who are less motivated by external incentives.
+
+**Effort Cost Weight (β_e):** This reflects the subjective cost of exerting cognitive control. Higher values mean that control is experienced as more costly or aversive. Children with high β_e may be prone to mental fatigue or may find effortful tasks particularly draining.
+
+**Baseline Control (baseline):** This represents each child's default level of control allocation before considering task-specific factors like reward or uncertainty. It captures stable individual differences in general engagement or effort investment independent of specific task demands.
+
+### **Model Comparison and Validation**
+
+To rigorously test whether our Bayesian EVC framework provides a better account of children's control allocation than traditional approaches, we compare three nested models:
+
+**Model 1 - Traditional EVC (Baseline):**
+```
+Control = baseline + (β_r × Reward × Accuracy) / (2 × β_e)
+```
+This model includes reward and effort but no uncertainty term. It serves as our baseline to test whether uncertainty adds predictive value.
+
+**Model 2 - Bayesian EVC (Non-Hierarchical):**
+```
+Control = baseline + (β_r × Reward × Accuracy + λ × Uncertainty) / (2 × β_e)
+```
+This adds the uncertainty weight λ but fits a single set of parameters across all children (pooled model), ignoring individual differences.
+
+**Model 3 - Hierarchical Bayesian EVC (Proposed):**
+```
+Population: μ_λ, σ_λ (and hyperparameters for other parameters)
+Individual: λᵢ ~ Normal(μ_λ, σ_λ) for each child i
+Trial: Control[i,t] using child i's parameters
+```
+This is our full model with both uncertainty and hierarchical structure.
+
+We compare these models using multiple metrics: Widely Applicable Information Criterion (WAIC), which balances fit and complexity; Leave-One-Out Cross-Validation (LOO-CV), which tests out-of-sample prediction; and posterior predictive checks, which verify that the model can generate data that looks like our actual observations. We expect Model 3 to substantially outperform Model 1 (ΔWAIC > 20, indicating strong evidence) and moderately outperform Model 2 (ΔWAIC > 10), demonstrating that both uncertainty and individual differences are critical for understanding control allocation.
+
+### **What the Model Predicts and How We Test It**
+
+The model makes several concrete, testable predictions:
+
+**Prediction 1:** Children allocate more control on high-uncertainty trials. We test this by examining whether λ > 0 at the population level. A positive uncertainty weight means that, holding reward and accuracy constant, children exert more effort when they are uncertain. We quantify evidence via P(μ_λ > 0 | data), expecting this probability to exceed 0.95 (strong evidence) or ideally 0.99 (very strong evidence).
+
+**Prediction 2:** Children vary substantially in their uncertainty sensitivity. We test this by examining σ_λ, the between-child standard deviation of uncertainty weights. If σ_λ is large relative to μ_λ (coefficient of variation > 0.3), this indicates meaningful individual differences, justifying the hierarchical structure and suggesting clinical/educational relevance.
+
+**Prediction 3:** Older children show more efficient control allocation (lower λ). As children develop, they should learn to calibrate control more precisely to task demands rather than over-allocating control due to uncertainty. We test this by correlating individual λᵢ estimates with age, predicting a negative correlation (r < -0.3).
+
+**Prediction 4:** Children with math anxiety show elevated λ. Anxiety is characterized by intolerance of uncertainty and overestimation of threat. In our framework, this should manifest as higher uncertainty weights, where anxious children allocate excessive control even when uncertainty is moderate. We test this by comparing λ between children scoring high versus low on math anxiety questionnaires, predicting μ_λ(anxious) > μ_λ(control) with posterior probability > 0.95.
+
+By generating quantitative, probabilistic predictions and testing them with rigorous Bayesian inference, our modeling approach provides a principled framework for understanding how uncertainty shapes cognitive control allocation in developing minds, with clear implications for identifying and supporting children who struggle with effortful cognitive tasks.
+
+---
+
 ## The Hierarchical Bayesian Advantage for Small Sample Sizes
 
 A critical challenge in cognitive neuroscience research, particularly in developmental and clinical populations, is working with limited sample sizes. Typical in-house studies can realistically recruit 15-30 participants, with 100-200 trials per participant. Traditional pooled models that estimate a single set of parameters across all participants ignore meaningful individual differences and often fail to generalize to new individuals. Conversely, fitting completely separate models for each participant with only 100-200 trials leads to unstable, unreliable parameter estimates with high uncertainty.
